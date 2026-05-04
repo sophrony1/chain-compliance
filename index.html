@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Can the U.S. Censor Bitcoin Transactions? — An Interactive Explorer</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --line: #d4d4d4;
+    --bg: #fafafa;
+    --accent: #c0392b;
+    --good: #27ae60;
+    --muted: #666;
+    --highlight: #fff5f3;
+    --good-bg: #f0faf3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+  header {
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  h1 {
+    margin: 0 0 6px 0;
+    font-size: 24px;
+    font-weight: 600;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 900px;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 1000px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+  .controls {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 18px;
+    height: fit-content;
+    position: sticky;
+    top: 20px;
+  }
+  .controls h2 {
+    margin: 0 0 4px 0;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+  .section-blurb {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 0 12px 0;
+    font-style: italic;
+  }
+  .slider-group {
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px dashed #eee;
+  }
+  .slider-group:last-of-type { border-bottom: none; }
+  .slider-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+  .label-name { font-weight: 600; flex: 1; padding-right: 8px; }
+  .label-value {
+    font-family: "SF Mono", Monaco, monospace;
+    color: var(--accent);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .label-desc {
+    font-size: 11px;
+    color: var(--muted);
+    margin: 2px 0 6px 0;
+    line-height: 1.35;
+  }
+  input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  .preset-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .preset-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 8px;
+    font-size: 11px;
+    border: 1px solid var(--line);
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1.2;
+  }
+  .preset-btn:hover {
+    background: var(--highlight);
+    border-color: var(--accent);
+  }
+  .preset-btn .preset-title {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .preset-btn .preset-sub {
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .results {
+    background: var(--highlight);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 14px;
+    margin-top: 14px;
+    font-size: 13px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .results.success {
+    background: var(--good-bg);
+    border-color: var(--good);
+  }
+  .results h3 {
+    margin: 0 0 10px 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+  .results .row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 12px;
+  }
+  .results .row .label { color: #444; }
+  .results .row .val {
+    font-family: "SF Mono", Monaco, monospace;
+    font-weight: 600;
+  }
+  .results .verdict {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  .verdict.success-text { color: var(--good); }
+  .verdict.fail-text { color: var(--accent); }
+  .charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 1000px) {
+    .charts { grid-template-columns: 1fr; }
+  }
+  .chart-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 14px;
+  }
+  .chart-card.wide {
+    grid-column: 1 / -1;
+    max-width: 820px;
+    margin: 0 auto;
+  }
+  .chart-card.wide canvas {
+    /* Cap the main chart's rendered height so it never dominates the screen */
+    max-height: 520px;
+  }
+  .chart-card h3 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+  }
+  .chart-card .desc {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  canvas { width: 100%; display: block; }
+  details {
+    margin-top: 20px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px 16px;
+  }
+  details summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 4px 0;
+  }
+  details p { font-size: 13px; margin: 8px 0; }
+  details ul { font-size: 13px; padding-left: 20px; }
+  details li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Can the U.S. Censor Bitcoin Transactions?</h1>
+  <div class="subtitle">
+    An interactive model of the <strong>chain compliance</strong> proposal: U.S.&ndash;aligned
+    miners refuse to build on top of any block that includes a sanctioned transaction, and
+    instead try to rewrite that block out of history. This tool shows when that strategy
+    succeeds and when it backfires.
+    <em>Based on Hendrickson &amp; Warmke (2026), <i>Journal of Economic Behavior and
+    Organization</i>.</em>
+  </div>
+</header>
+
+<div class="layout">
+
+  <div class="controls">
+    <h2>Try a scenario</h2>
+    <p class="section-blurb">Each preset matches a figure in the paper.</p>
+    <div class="preset-row">
+      <button class="preset-btn" data-preset="benchmark">
+        <span class="preset-title">No sanctions</span>
+        <span class="preset-sub">baseline</span>
+      </button>
+      <button class="preset-btn" data-preset="lowtheta">
+        <span class="preset-title">Weak threat</span>
+        <span class="preset-sub">few will rewrite</span>
+      </button>
+      <button class="preset-btn" data-preset="hightheta">
+        <span class="preset-title">Strong threat</span>
+        <span class="preset-sub">most will rewrite</span>
+      </button>
+      <button class="preset-btn" data-preset="asymm">
+        <span class="preset-title">Cheap U.S. power</span>
+        <span class="preset-sub">+ moderate threat</span>
+      </button>
+    </div>
+
+    <h2>Sanctions strategy</h2>
+    <p class="section-blurb">The two levers a regulator actually controls.</p>
+
+    <div class="slider-group">
+      <label>
+        <span class="label-name">Aggressiveness of the rewrite campaign</span>
+        <span class="label-value" id="val-theta">0%</span>
+      </label>
+      <div class="label-desc">
+        Among miners who have agreed to comply, what fraction will actually try to overwrite
+        the most recent block when it contains a sanctioned transaction? This is about the
+        coalition's <em>commitment</em>, not its size — a hesitant 50%-of-network coalition
+        is weaker than a determined 30%-of-network one.
+      </div>
+      <input type="range" id="theta" min="0" max="1" step="0.01" value="0">
+    </div>
+
+    <div class="slider-group">
+      <label>
+        <span class="label-name">Expected fine for processing a sanctioned transaction</span>
+        <span class="label-value" id="val-qF">$0</span>
+      </label>
+      <div class="label-desc">
+        How much a non-compliant miner expects to pay if caught — the probability of being
+        caught times the fine if caught. This shrinks profits without changing strategy on the margin.
+      </div>
+      <input type="range" id="qF" min="0" max="200000" step="1000" value="0">
+    </div>
+
+    <h2>Energy costs</h2>
+    <p class="section-blurb">Where each side's miners get their power.</p>
+
+    <div class="slider-group">
+      <label>
+        <span class="label-name">Energy cost for non-compliant miners</span>
+        <span class="label-value" id="val-phi1">average</span>
+      </label>
+      <div class="label-desc">
+        How expensive is electricity for the miners who'd process sanctioned transactions?
+        Slide left for cheap-power havens (e.g., flared-gas, hydro), right for expensive grids.
+      </div>
+      <input type="range" id="phi1" min="20000" max="200000" step="1000" value="80000">
+    </div>
+
+    <div class="slider-group">
+      <label>
+        <span class="label-name">Energy cost for compliant U.S. miners</span>
+        <span class="label-value" id="val-phi2">average</span>
+      </label>
+      <div class="label-desc">
+        Same scale, but for the U.S.&ndash;aligned side. The paper's key finding is that sanctions
+        work best when the <em>compliant</em> side has cheaper energy.
+      </div>
+      <input type="range" id="phi2" min="20000" max="200000" step="1000" value="80000">
+    </div>
+
+    <div class="results" id="results">
+      <h3>Outcome</h3>
+      <div class="row">
+        <span class="label">Non-compliant share of mining</span>
+        <span class="val" id="r-share">—</span>
+      </div>
+      <div class="row">
+        <span class="label">Compliant share of mining</span>
+        <span class="val" id="r-share2">—</span>
+      </div>
+      <div class="row">
+        <span class="label">Profit per block, non-compliant side</span>
+        <span class="val" id="r-p1">—</span>
+      </div>
+      <div class="row">
+        <span class="label">Profit per block, compliant side</span>
+        <span class="val" id="r-p2">—</span>
+      </div>
+      <div class="verdict" id="r-verdict">—</div>
+    </div>
+  </div>
+
+  <div class="charts">
+
+    <div class="chart-card wide">
+      <h3>The strategic equilibrium</h3>
+      <p class="desc">
+        Each axis measures one side's share of total mining effort.
+        The <strong>solid lines</strong> show each side's best response to the other's effort;
+        they cross at the dot — <strong>where the market settles</strong>.
+        The <span style="color:#c0392b;font-weight:600">red-shaded zone</span> is where non-compliant
+        mining is profitable; outside it, sanctions have driven non-compliant miners into the red.
+        <em>Censorship succeeds when the dot falls outside the shaded zone.</em>
+      </p>
+      <canvas id="chart-main" height="420"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <h3>How aggressive does the censorship campaign need to be?</h3>
+      <p class="desc">
+        Sweeps the rewrite-share slider from passive (left) to maximally aggressive (right),
+        keeping everything else fixed. The line crosses zero at the threshold where
+        sanctioning successfully drives non-compliant miners out.
+      </p>
+      <canvas id="chart-theta" height="280"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <h3>How big do the fines need to be?</h3>
+      <p class="desc">
+        Sweeps the expected-fine slider from $0 to $200,000 per block.
+        Where this line crosses zero is the minimum fine that makes non-compliant
+        mining unprofitable, given the current rewrite-share and energy costs.
+      </p>
+      <canvas id="chart-qF" height="280"></canvas>
+    </div>
+
+  </div>
+</div>
+
+<details>
+  <summary>What is "chain compliance" and why does it matter?</summary>
+  <p>The U.S. uses financial sanctions as a foreign-policy tool. Bitcoin makes that hard,
+     because anyone with electricity and an internet connection can process transactions for
+     anyone else. <strong>Chain compliance</strong> is one proposal to plug that gap: U.S.&ndash;aligned
+     bitcoin miners would not only refuse to include sanctioned transactions in their own blocks,
+     but would also refuse to build on top of any block that does — and would actively try to
+     rewrite the recent history to erase non-compliant blocks.</p>
+  <p>This is also called a "feather fork." It works in theory because if enough mining power
+     commits to it credibly, mining a non-compliant block becomes a bet that you'll keep your
+     reward — and that bet gets worse as the rewrite share rises. Eventually no one bothers.</p>
+  <p>The model captures the strategic tension: compliant miners must commit real resources to
+     the rewrite campaign, while non-compliant miners weigh higher fees from sanctioned users
+     against the risk of having their blocks erased.</p>
+</details>
+
+<details>
+  <summary>How to read the comparative statics</summary>
+  <ul>
+    <li><b>The rewrite campaign has two competing effects on non-compliant effort.</b>
+        A more aggressive rewrite campaign raises non-compliant miners' costs — pushing
+        their effort down — but also raises their stakes when they do win a block, since
+        each surviving block is worth more relative to ones that get erased. Push the
+        slider gradually upward and watch non-compliant activity actually rise for a
+        while before the profitable region collapses around it.</li>
+    <li><b>Fines work differently from rewrites.</b> A fine is a fixed cost — it doesn't
+        change anyone's marginal calculation, only whether they're profitable at all. The fine
+        sweep chart is a straight line down. The rewrite sweep is more interesting.</li>
+    <li><b>Energy costs decide the contest.</b> When U.S.&ndash;compliant miners have cheaper
+        energy than non-compliant rivals, sanctions work much better. When the energy advantage
+        flips — as it would if non-compliant mining migrates to flared-gas or hydro&ndash;rich
+        jurisdictions — the same sanctions strategy fails. <em>This is the paper's central
+        empirical claim about why a U.S.&ndash;led campaign is unlikely to succeed in the long run.</em></li>
+  </ul>
+  <p style="margin-top:12px;padding-top:10px;border-top:1px solid #eee;font-size:12px;color:#666;">
+    <b>Caveat the model omits:</b> when non-compliant miners get squeezed, sanctioned users
+    have a counter-move — they can offer higher transaction fees to keep getting included.
+    The paper acknowledges this on p.&nbsp;14: a successful crackdown raises non-compliant fee
+    revenue, which can offset fines and may even fund hashrate expansion. So a "censorship
+    works" verdict here should be read as the <em>short-run, fee-static</em> result, not the
+    long-run equilibrium.
+  </p>
+</details>
+
+<script>
+// Solver internals — same math as the paper, hidden behind plain-language UI.
+function solveG1givenH2(h2, a, phi1, theta, psi) {
+  const K = (1 + theta*psi) * a;
+  const f = (h1) => phi1*h1 - h2/((h1+h2)*(h1+h2)) * K;
+  let lo = 1e-9, hi = Math.max(10, h2*100);
+  while (f(hi) < 0 && hi < 1e6) hi *= 2;
+  for (let i = 0; i < 80; i++) {
+    const mid = 0.5*(lo+hi);
+    if (f(mid) > 0) hi = mid; else lo = mid;
+  }
+  return 0.5*(lo+hi);
+}
+
+function solveG2givenH1(h1, a, phi2) {
+  const f = (h2) => phi2*h2 - h1/((h1+h2)*(h1+h2)) * a;
+  let lo = 1e-9, hi = Math.max(10, h1*100);
+  while (f(hi) < 0 && hi < 1e6) hi *= 2;
+  for (let i = 0; i < 80; i++) {
+    const mid = 0.5*(lo+hi);
+    if (f(mid) > 0) hi = mid; else lo = mid;
+  }
+  return 0.5*(lo+hi);
+}
+
+function solveEquilibrium(a, phi1, phi2, theta, psi) {
+  let h1 = 0.7, h2 = 0.7;
+  for (let i = 0; i < 500; i++) {
+    const newH1 = solveG1givenH2(h2, a, phi1, theta, psi);
+    const newH2 = solveG2givenH1(h1, a, phi2);
+    h1 = 0.5*h1 + 0.5*newH1;
+    h2 = 0.5*h2 + 0.5*newH2;
+  }
+  return { h1, h2 };
+}
+
+function group1Profit(h1, h2, a, phi1, theta, psi, qF) {
+  const s = h1 + h2;
+  if (s <= 0) return -Infinity;
+  return (h1/s - (h2/s)*theta*psi)*a - 0.5*phi1*h1*h1 - qF;
+}
+
+function group2Profit(h1, h2, a, phi2) {
+  const s = h1 + h2;
+  if (s <= 0) return -Infinity;
+  return (h2/s)*a - 0.5*phi2*h2*h2;
+}
+
+function reactionCurveG1(h2, a, phi1, theta, psi) {
+  return solveG1givenH2(h2, a, phi1, theta, psi);
+}
+function reactionCurveG2(h1, a, phi2) {
+  return solveG2givenH1(h1, a, phi2);
+}
+
+function zeroProfitG1(h1, a, phi1, theta, psi, qF) {
+  const K = 0.5*phi1*h1*h1 + qF;
+  const denom = theta*psi*a + K;
+  if (denom <= 0) return NaN;
+  const num = h1*(a - K);
+  if (num <= 0) return NaN;
+  return num / denom;
+}
+
+function zeroProfitG2(h2, a, phi2) {
+  const h1 = 2*a/(phi2*h2) - h2;
+  return h1 > 0 ? h1 : NaN;
+}
+
+// Chart plumbing
+function setupCanvas(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, w: rect.width, h: rect.height };
+}
+
+function drawAxes(ctx, w, h, pad, xlim, ylim, xlabel, ylabel, opts) {
+  opts = opts || {};
+  const fs = opts.fontScale || 1;
+  const tickFont = Math.round(11 * fs);
+  const labelFont = Math.round(13 * fs);
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, w, h);
+  ctx.font = tickFont + 'px -apple-system, sans-serif';
+
+  let plot = { x: pad.l, y: pad.t, w: w - pad.l - pad.r, h: h - pad.t - pad.b };
+  // If the caller asks for a square plot (i.e., the x and y axes use the same
+  // units and a 1:1 unit ratio is conceptually meaningful), shrink the plot to
+  // a square inscribed in the available area, centered horizontally. This makes
+  // (1,1), (2,2), etc. fall on a clean 45° diagonal — important for charts
+  // where comparing the two axes visually matters.
+  if (opts.squarePlot) {
+    const side = Math.min(plot.w, plot.h);
+    plot = {
+      x: plot.x + (plot.w - side) / 2,
+      y: plot.y + (plot.h - side) / 2,
+      w: side,
+      h: side,
+    };
+  }
+
+  ctx.strokeStyle = '#eee';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const xv = xlim[0] + (xlim[1]-xlim[0])*i/5;
+    const yv = ylim[0] + (ylim[1]-ylim[0])*i/5;
+    const px = plot.x + plot.w*i/5;
+    const py = plot.y + plot.h*(1 - i/5);
+    ctx.beginPath(); ctx.moveTo(px, plot.y); ctx.lineTo(px, plot.y+plot.h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(plot.x, py); ctx.lineTo(plot.x+plot.w, py); ctx.stroke();
+    ctx.fillStyle = '#444';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(opts.xfmt ? opts.xfmt(xv) : formatTick(xv), px, plot.y+plot.h+5);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(opts.yfmt ? opts.yfmt(yv) : formatTick(yv), plot.x-6, py);
+  }
+
+  ctx.strokeStyle = '#333';
+  ctx.strokeRect(plot.x, plot.y, plot.w, plot.h);
+
+  ctx.fillStyle = '#1a1a1a';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.font = '600 ' + labelFont + 'px -apple-system, sans-serif';
+  ctx.fillText(xlabel, plot.x + plot.w/2, h - 6);
+  ctx.save();
+  // Place the y-axis title just left of the plot, allowing room for the longest
+  // tick label (~3 char) plus a small gap. This keeps the title tracking the
+  // plot when the plot is shifted (e.g., for a centered square plot).
+  ctx.font = tickFont + 'px -apple-system, sans-serif';
+  const yTickMaxW = ctx.measureText(opts.yfmt ? opts.yfmt(ylim[1]) : formatTick(ylim[1])).width;
+  ctx.font = '600 ' + labelFont + 'px -apple-system, sans-serif';
+  const ylabelX = Math.max(18, plot.x - yTickMaxW - 18);
+  ctx.translate(ylabelX, plot.y + plot.h/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.textBaseline = 'top';
+  ctx.fillText(ylabel, 0, 0);
+  ctx.restore();
+
+  return {
+    plot,
+    toPx: (xv, yv) => [
+      plot.x + (xv - xlim[0])/(xlim[1]-xlim[0]) * plot.w,
+      plot.y + (1 - (yv - ylim[0])/(ylim[1]-ylim[0])) * plot.h
+    ],
+    xlim, ylim
+  };
+}
+
+function formatTick(v) {
+  if (Math.abs(v) >= 1000) return (v/1000).toFixed(0) + 'k';
+  if (Math.abs(v) >= 10) return v.toFixed(0);
+  return v.toFixed(1);
+}
+
+function drawCurve(ctx, ax, points, style) {
+  ctx.beginPath();
+  ctx.strokeStyle = style.color || '#000';
+  ctx.lineWidth = style.lw || 2;
+  if (style.dash) ctx.setLineDash(style.dash); else ctx.setLineDash([]);
+  let started = false;
+  for (const [x, y] of points) {
+    if (!isFinite(x) || !isFinite(y)) { started = false; continue; }
+    const [px, py] = ax.toPx(x, y);
+    if (px < ax.plot.x - 5 || px > ax.plot.x + ax.plot.w + 5) { started = false; continue; }
+    if (py < ax.plot.y - 5 || py > ax.plot.y + ax.plot.h + 5) { started = false; continue; }
+    if (!started) { ctx.moveTo(px, py); started = true; }
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawPoint(ctx, ax, x, y, color, r, label, fontScale) {
+  if (!isFinite(x) || !isFinite(y)) return;
+  const [px, py] = ax.toPx(x, y);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(px, py, r || 6, 0, 2*Math.PI);
+  ctx.fill();
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  if (label) {
+    const fs = fontScale || 1;
+    const fontPx = Math.round(12 * fs);
+    ctx.font = 'bold ' + fontPx + 'px -apple-system, sans-serif';
+    ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(label).width;
+    const placeRight = px + 14 + tw < ax.plot.x + ax.plot.w - 4;
+    ctx.textAlign = placeRight ? 'left' : 'right';
+    const tx = placeRight ? px + 12 : px - 12;
+    // White halo for readability over the shaded background
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'white';
+    ctx.strokeText(label, tx, py);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillText(label, tx, py);
+  }
+}
+
+function drawLegend(ctx, plot, items, position, fontScale, canvasW) {
+  position = position || 'top-right';
+  const fs = fontScale || 1;
+  const fontPx = Math.round(11 * fs);
+  const lineHeight = Math.round(20 * fs);
+  const padding = Math.round(10 * fs);
+  const lineLen = Math.round(24 * fs);
+  const textGap = Math.round(8 * fs);
+
+  ctx.font = fontPx + 'px -apple-system, sans-serif';
+  let maxWidth = 0;
+  items.forEach(it => {
+    maxWidth = Math.max(maxWidth, ctx.measureText(it.label).width);
+  });
+  const boxW = lineLen + textGap + maxWidth + padding*2;
+  const boxH = items.length * lineHeight + padding;
+
+  let x0, y0;
+  if (position === 'right-of-plot') {
+    // Place in the empty margin to the right of a (possibly-square) plot.
+    // If there's not enough room there, fall back to top-right inside the plot.
+    const rightMargin = (canvasW || (plot.x + plot.w + 200)) - (plot.x + plot.w);
+    if (rightMargin >= boxW + 16) {
+      x0 = plot.x + plot.w + 16;
+      y0 = plot.y + 4;
+    } else {
+      x0 = plot.x + plot.w - boxW - 4;
+      y0 = plot.y + 4;
+    }
+  } else if (position === 'top-right') {
+    x0 = plot.x + plot.w - boxW - 4;
+    y0 = plot.y + 4;
+  } else {
+    x0 = plot.x + 4;
+    y0 = plot.y + 4;
+  }
+
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.strokeStyle = '#bbb';
+  ctx.lineWidth = 1;
+  ctx.fillRect(x0, y0, boxW, boxH);
+  ctx.strokeRect(x0, y0, boxW, boxH);
+
+  items.forEach((it, i) => {
+    const yy = y0 + padding + i*lineHeight + lineHeight/2 - padding/2;
+    ctx.strokeStyle = it.color;
+    ctx.lineWidth = it.lw || 2;
+    ctx.setLineDash(it.dash || []);
+    ctx.beginPath();
+    ctx.moveTo(x0+padding, yy);
+    ctx.lineTo(x0+padding+lineLen, yy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(it.label, x0+padding+lineLen+textGap, yy);
+  });
+}
+
+// State
+const STATE = { theta: 0, qF: 0, a: 171875, phi1: 80000, phi2: 80000, psi: 1 };
+
+const PRESETS = {
+  benchmark: { theta: 0,    qF: 0,    phi1: 80000, phi2: 80000 },
+  lowtheta:  { theta: 0.1,  qF: 0,    phi1: 80000, phi2: 80000 },
+  hightheta: { theta: 0.9,  qF: 0,    phi1: 80000, phi2: 80000 },
+  asymm:     { theta: 0.5,  qF: 1000, phi1: 80000, phi2: 40000 }
+};
+
+function fmtCostLabel(phi) {
+  if (phi <= 35000) return 'very cheap';
+  if (phi <= 60000) return 'cheap';
+  if (phi <= 100000) return 'average';
+  if (phi <= 140000) return 'expensive';
+  return 'very expensive';
+}
+
+function render() {
+  const { theta, qF, a, phi1, phi2, psi } = STATE;
+
+  document.getElementById('val-theta').textContent = (theta*100).toFixed(0) + '%';
+  document.getElementById('val-qF').textContent = '$' + qF.toLocaleString();
+  document.getElementById('val-phi1').textContent = fmtCostLabel(phi1);
+  document.getElementById('val-phi2').textContent = fmtCostLabel(phi2);
+
+  const eq = solveEquilibrium(a, phi1, phi2, theta, psi);
+  const p1 = group1Profit(eq.h1, eq.h2, a, phi1, theta, psi, qF);
+  const p2 = group2Profit(eq.h1, eq.h2, a, phi2);
+  const share = eq.h1 / (eq.h1 + eq.h2);
+  const censorshipWorks = p1 < 0;
+
+  document.getElementById('r-share').textContent = (share*100).toFixed(1) + '%';
+  document.getElementById('r-share2').textContent = ((1-share)*100).toFixed(1) + '%';
+  document.getElementById('r-p1').textContent = (p1 < 0 ? '−' : '') + '$' + Math.abs(Math.round(p1)).toLocaleString();
+  document.getElementById('r-p2').textContent = (p2 < 0 ? '−' : '') + '$' + Math.abs(Math.round(p2)).toLocaleString();
+
+  const verdict = document.getElementById('r-verdict');
+  const resultsBox = document.getElementById('results');
+  if (censorshipWorks) {
+    verdict.innerHTML = '✓ <strong>Censorship works.</strong> Non-compliant miners lose money on average and would exit the market.';
+    verdict.className = 'verdict success-text';
+    resultsBox.classList.add('success');
+  } else {
+    verdict.innerHTML = '✗ <strong>Censorship fails.</strong> Non-compliant miners stay profitable and continue processing sanctioned transactions.';
+    verdict.className = 'verdict fail-text';
+    resultsBox.classList.remove('success');
+  }
+
+  drawMainChart(eq, censorshipWorks);
+  drawSweepChart('chart-theta', 'theta', 0, 1, eq);
+  drawSweepChart('chart-qF', 'qF', 0, 200000, eq);
+}
+
+function drawMainChart(eq, censorshipWorks) {
+  const canvas = document.getElementById('chart-main');
+  const { ctx, w, h } = setupCanvas(canvas);
+  const FS = 1.35;  // font scale: bigger labels for presentation readability
+  const pad = { l: 84, r: 28, t: 28, b: 64 };
+  const HMAX = 5;
+  const ax = drawAxes(ctx, w, h, pad, [0, HMAX], [0, HMAX],
+    'Mining effort by non-compliant miners →',
+    'Mining effort by compliant miners →',
+    { fontScale: FS, squarePlot: true });
+
+  const { theta, qF, a, phi1, phi2, psi } = STATE;
+  const N = 200;
+  const grid = Array.from({length: N}, (_, i) => 0.01 + (HMAX - 0.01)*i/(N-1));
+
+  const g1pts = grid.map(h2 => [reactionCurveG1(h2, a, phi1, theta, psi), h2]);
+  const g2pts = grid.map(h1 => [h1, reactionCurveG2(h1, a, phi2)]);
+  const zp1pts = grid.map(h1 => [h1, zeroProfitG1(h1, a, phi1, theta, psi, qF)]);
+
+  // ---- Shade the non-compliant profitable zone ----
+  ctx.save();
+  ctx.beginPath();
+  let polyStarted = false;
+  let lastValidH1 = 0;
+  for (const [x, y] of zp1pts) {
+    if (!isFinite(x) || !isFinite(y) || y <= 0 || x > HMAX) continue;
+    const yc = Math.min(y, HMAX);
+    const [px, py] = ax.toPx(x, yc);
+    if (!polyStarted) { ctx.moveTo(px, py); polyStarted = true; }
+    else ctx.lineTo(px, py);
+    lastValidH1 = x;
+  }
+  if (polyStarted && lastValidH1 > 0) {
+    const [px, py] = ax.toPx(lastValidH1, 0);
+    ctx.lineTo(px, py);
+    const [px0, py0] = ax.toPx(0, 0);
+    ctx.lineTo(px0, py0);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(192, 57, 43, 0.12)';
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // ---- Draw the curves (thicker for projector) ----
+  drawCurve(ctx, ax, g1pts, { color: '#c0392b', lw: 3 });
+  drawCurve(ctx, ax, g2pts, { color: '#2c5aa0', lw: 3 });
+  drawCurve(ctx, ax, zp1pts, { color: '#c0392b', lw: 2, dash: [5, 4] });
+
+  // ---- Region label inside the shaded zone ----
+  // Place the label inside the loop, above the equilibrium dot to avoid collision.
+  // For small loops we use a compact single-line label tucked into a corner.
+  let cx = 0, count = 0, peakH2 = 0;
+  for (const [x, y] of zp1pts) {
+    if (!isFinite(x) || !isFinite(y) || y <= 0 || x > HMAX) continue;
+    cx += x; count++;
+    if (y > peakH2 && y < HMAX) peakH2 = y;
+  }
+  if (count > 5 && peakH2 > 0.05) {
+    cx /= count;
+    // Use the multi-line variant only when the loop is tall AND the label can sit
+    // well above the dot. Otherwise use the compact label.
+    const useMultiLine = peakH2 > 2.0 && (peakH2 * 0.55) > eq.h2 + 0.5;
+    let labelY;
+    if (useMultiLine) {
+      labelY = peakH2 * 0.55;
+    } else {
+      // Compact label, placed inside the loop but offset from the dot
+      labelY = Math.max(0.18, Math.min(eq.h2 - 0.45, peakH2 * 0.35));
+    }
+    const [lx, ly] = ax.toPx(cx, labelY);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (useMultiLine) {
+      ctx.font = 'bold ' + Math.round(13 * FS) + 'px -apple-system, sans-serif';
+      ctx.lineWidth = 5; ctx.strokeStyle = 'white';
+      ctx.strokeText('non-compliant', lx, ly - 11);
+      ctx.strokeText('mining is profitable here', lx, ly + 11);
+      ctx.fillStyle = 'rgba(192, 57, 43, 0.95)';
+      ctx.fillText('non-compliant', lx, ly - 11);
+      ctx.fillText('mining is profitable here', lx, ly + 11);
+    } else {
+      ctx.font = 'bold ' + Math.round(11 * FS) + 'px -apple-system, sans-serif';
+      ctx.lineWidth = 5; ctx.strokeStyle = 'white';
+      ctx.strokeText('non-compliant profit zone', lx, ly);
+      ctx.fillStyle = 'rgba(192, 57, 43, 0.95)';
+      ctx.fillText('non-compliant profit zone', lx, ly);
+    }
+  }
+
+  // ---- Equilibrium dot — colored by verdict ----
+  const dotColor = censorshipWorks ? '#27ae60' : '#c0392b';
+  const dotLabel = censorshipWorks
+    ? 'market settles here (censorship succeeds)'
+    : 'market settles here (censorship fails)';
+  drawPoint(ctx, ax, eq.h1, eq.h2, dotColor, 11, dotLabel, FS);
+
+  drawLegend(ctx, ax.plot, [
+    { label: 'Non-compliant best response', color: '#c0392b', lw: 3 },
+    { label: 'Compliant best response',     color: '#2c5aa0', lw: 3 },
+    { label: 'Non-compliant break-even',    color: '#c0392b', lw: 2, dash: [5,4] }
+  ], 'right-of-plot', FS, w);
+}
+
+function drawSweepChart(canvasId, sweepVar, lo, hi, currentEq) {
+  const canvas = document.getElementById(canvasId);
+  const { ctx, w, h } = setupCanvas(canvas);
+  const pad = { l: 70, r: 20, t: 16, b: 42 };
+
+  const N = 80;
+  const xs = Array.from({length: N}, (_, i) => lo + (hi-lo)*i/(N-1));
+  const profits = xs.map(v => {
+    const params = { ...STATE, [sweepVar]: v };
+    const eq = solveEquilibrium(params.a, params.phi1, params.phi2, params.theta, params.psi);
+    return group1Profit(eq.h1, eq.h2, params.a, params.phi1, params.theta, params.psi, params.qF);
+  });
+
+  const ymin = Math.min(0, ...profits);
+  const ymax = Math.max(0, ...profits);
+  const yrange = ymax - ymin || 1;
+  const ypad = yrange * 0.12;
+
+  const xlabel = sweepVar === 'theta'
+    ? 'Aggressiveness of the rewrite campaign'
+    : 'Expected fine per non-compliant block';
+
+  const xfmt = sweepVar === 'theta'
+    ? (v) => (v*100).toFixed(0) + '%'
+    : (v) => '$' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v.toFixed(0));
+
+  const yfmt = (v) => {
+    if (v === 0) return '$0';
+    const sign = v < 0 ? '−' : '';
+    const abs = Math.abs(v);
+    if (abs >= 1000) return sign + '$' + (abs/1000).toFixed(0) + 'k';
+    return sign + '$' + abs.toFixed(0);
+  };
+
+  const ax = drawAxes(ctx, w, h, pad,
+    [lo, hi],
+    [ymin - ypad, ymax + ypad],
+    xlabel,
+    'Profit per block, non-compliant miners',
+    { xfmt, yfmt });
+
+  // Shaded regions
+  const [, zy] = ax.toPx(lo, 0);
+  ctx.save();
+  ctx.fillStyle = 'rgba(39, 174, 96, 0.06)';
+  ctx.fillRect(ax.plot.x, ax.plot.y, ax.plot.w, zy - ax.plot.y);
+  ctx.fillStyle = 'rgba(192, 57, 43, 0.06)';
+  ctx.fillRect(ax.plot.x, zy, ax.plot.w, ax.plot.y + ax.plot.h - zy);
+  ctx.restore();
+
+  ctx.font = 'bold 10px -apple-system, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(192, 57, 43, 0.7)';
+  ctx.textBaseline = 'top';
+  ctx.fillText('censorship fails (positive profit)', ax.plot.x + ax.plot.w - 6, zy + 4);
+  ctx.fillStyle = 'rgba(39, 174, 96, 0.75)';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('censorship works (loss)', ax.plot.x + ax.plot.w - 6, zy - 4);
+
+  // Zero line
+  drawCurve(ctx, ax, [[lo, 0], [hi, 0]], { color: '#999', lw: 1, dash: [3, 3] });
+
+  // Profit curve
+  drawCurve(ctx, ax, xs.map((x, i) => [x, profits[i]]),
+    { color: '#c0392b', lw: 2.5 });
+
+  // Current setting marker
+  const currentVal = STATE[sweepVar];
+  const currentProfit = group1Profit(currentEq.h1, currentEq.h2, STATE.a, STATE.phi1, STATE.theta, STATE.psi, STATE.qF);
+  drawPoint(ctx, ax, currentVal, currentProfit, '#1a1a1a', 5);
+
+  if (isFinite(currentVal) && isFinite(currentProfit)) {
+    const [px, py] = ax.toPx(currentVal, currentProfit);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = '10px -apple-system, sans-serif';
+    const labelText = 'current setting';
+    const tw = ctx.measureText(labelText).width;
+    const placeRight = px + 12 + tw < ax.plot.x + ax.plot.w - 6;
+    ctx.textAlign = placeRight ? 'left' : 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(labelText, placeRight ? px + 10 : px - 10, py);
+  }
+}
+
+// Wire up
+['theta', 'qF', 'phi1', 'phi2'].forEach(name => {
+  const el = document.getElementById(name);
+  el.addEventListener('input', () => {
+    STATE[name] = parseFloat(el.value);
+    render();
+  });
+});
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const preset = PRESETS[btn.dataset.preset];
+    Object.assign(STATE, preset);
+    Object.entries(preset).forEach(([k, v]) => {
+      const el = document.getElementById(k);
+      if (el) el.value = v;
+    });
+    render();
+  });
+});
+
+window.addEventListener('resize', render);
+render();
+</script>
+
+</div>
+</body>
+</html>
