@@ -41,35 +41,18 @@
   }
   .layout {
     display: grid;
-    grid-template-columns: 300px 1fr 360px;
+    grid-template-columns: 300px 1fr;
     gap: 14px;
   }
-  @media (max-width: 1100px) {
+  @media (max-width: 900px) {
     .layout { grid-template-columns: 1fr; }
   }
   .chart-main {
     display: flex;
     flex-direction: column;
-    min-height: 560px;
+    min-height: 600px;
   }
   .chart-main canvas {
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-  .chart-sweeps {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-height: 560px;
-  }
-  .chart-sweeps .chart-card {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    padding: 12px 14px;
-  }
-  .chart-sweeps canvas {
     flex: 1 1 auto;
     min-height: 0;
   }
@@ -344,20 +327,6 @@
       that dot falls outside the <span style="color:#c0392b;font-weight:600">red profitable zone</span>.
     </p>
     <canvas id="chart-main"></canvas>
-  </div>
-
-  <div class="chart-sweeps">
-    <div class="chart-card">
-      <h3>How aggressive must the campaign be?</h3>
-      <p class="desc">Zero crossing: threshold where sanctions break non-compliant profitability.</p>
-      <canvas id="chart-theta"></canvas>
-    </div>
-
-    <div class="chart-card">
-      <h3>How big must the fine be?</h3>
-      <p class="desc">Zero crossing: minimum fine that breaks non-compliant profitability.</p>
-      <canvas id="chart-qF"></canvas>
-    </div>
   </div>
 </div>
 
@@ -700,8 +669,6 @@ function render() {
   }
 
   drawMainChart(eq, censorshipWorks);
-  drawSweepChart('chart-theta', 'theta', 0, 1, eq);
-  drawSweepChart('chart-qF', 'qF', 0, 200000, eq);
 }
 
 function drawMainChart(eq, censorshipWorks) {
@@ -805,90 +772,6 @@ function drawMainChart(eq, censorshipWorks) {
     { label: 'Compliant best response',     color: '#2c5aa0', lw: 3 },
     { label: 'Non-compliant break-even',    color: '#c0392b', lw: 2, dash: [5,4] }
   ], 'right-of-plot', FS, w);
-}
-
-function drawSweepChart(canvasId, sweepVar, lo, hi, currentEq) {
-  const canvas = document.getElementById(canvasId);
-  const { ctx, w, h } = setupCanvas(canvas);
-  const pad = { l: 70, r: 20, t: 16, b: 42 };
-
-  const N = 80;
-  const xs = Array.from({length: N}, (_, i) => lo + (hi-lo)*i/(N-1));
-  const profits = xs.map(v => {
-    const params = { ...STATE, [sweepVar]: v };
-    const eq = solveEquilibrium(params.a, params.phi1, params.phi2, params.theta, params.psi);
-    return group1Profit(eq.h1, eq.h2, params.a, params.phi1, params.theta, params.psi, params.qF);
-  });
-
-  const ymin = Math.min(0, ...profits);
-  const ymax = Math.max(0, ...profits);
-  const yrange = ymax - ymin || 1;
-  const ypad = yrange * 0.12;
-
-  const xlabel = sweepVar === 'theta'
-    ? 'Aggressiveness of the rewrite campaign'
-    : 'Expected fine per non-compliant block';
-
-  const xfmt = sweepVar === 'theta'
-    ? (v) => (v*100).toFixed(0) + '%'
-    : (v) => '$' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v.toFixed(0));
-
-  const yfmt = (v) => {
-    if (v === 0) return '$0';
-    const sign = v < 0 ? '−' : '';
-    const abs = Math.abs(v);
-    if (abs >= 1000) return sign + '$' + (abs/1000).toFixed(0) + 'k';
-    return sign + '$' + abs.toFixed(0);
-  };
-
-  const ax = drawAxes(ctx, w, h, pad,
-    [lo, hi],
-    [ymin - ypad, ymax + ypad],
-    xlabel,
-    'Profit per block, non-compliant miners',
-    { xfmt, yfmt });
-
-  // Shaded regions
-  const [, zy] = ax.toPx(lo, 0);
-  ctx.save();
-  ctx.fillStyle = 'rgba(39, 174, 96, 0.06)';
-  ctx.fillRect(ax.plot.x, ax.plot.y, ax.plot.w, zy - ax.plot.y);
-  ctx.fillStyle = 'rgba(192, 57, 43, 0.06)';
-  ctx.fillRect(ax.plot.x, zy, ax.plot.w, ax.plot.y + ax.plot.h - zy);
-  ctx.restore();
-
-  ctx.font = 'bold 10px -apple-system, sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillStyle = 'rgba(192, 57, 43, 0.7)';
-  ctx.textBaseline = 'top';
-  ctx.fillText('censorship fails (positive profit)', ax.plot.x + ax.plot.w - 6, zy + 4);
-  ctx.fillStyle = 'rgba(39, 174, 96, 0.75)';
-  ctx.textBaseline = 'bottom';
-  ctx.fillText('censorship works (loss)', ax.plot.x + ax.plot.w - 6, zy - 4);
-
-  // Zero line
-  drawCurve(ctx, ax, [[lo, 0], [hi, 0]], { color: '#999', lw: 1, dash: [3, 3] });
-
-  // Profit curve
-  drawCurve(ctx, ax, xs.map((x, i) => [x, profits[i]]),
-    { color: '#c0392b', lw: 2.5 });
-
-  // Current setting marker
-  const currentVal = STATE[sweepVar];
-  const currentProfit = group1Profit(currentEq.h1, currentEq.h2, STATE.a, STATE.phi1, STATE.theta, STATE.psi, STATE.qF);
-  drawPoint(ctx, ax, currentVal, currentProfit, '#1a1a1a', 5);
-
-  if (isFinite(currentVal) && isFinite(currentProfit)) {
-    const [px, py] = ax.toPx(currentVal, currentProfit);
-    ctx.fillStyle = '#1a1a1a';
-    ctx.font = '10px -apple-system, sans-serif';
-    const labelText = 'current setting';
-    const tw = ctx.measureText(labelText).width;
-    const placeRight = px + 12 + tw < ax.plot.x + ax.plot.w - 6;
-    ctx.textAlign = placeRight ? 'left' : 'right';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(labelText, placeRight ? px + 10 : px - 10, py);
-  }
 }
 
 // Wire up
