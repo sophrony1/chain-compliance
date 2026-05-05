@@ -229,12 +229,9 @@
 <header>
   <h1>Can the U.S. Censor Bitcoin Transactions?</h1>
   <div class="subtitle">
-    An interactive model of the <strong>chain compliance</strong> proposal: U.S.&ndash;aligned
-    miners refuse to build on top of any block that includes a sanctioned transaction, and
-    instead try to rewrite that block out of history. This tool shows when that strategy
-    succeeds and when it backfires.
-    <em>Based on Hendrickson &amp; Warmke (2026), <i>Journal of Economic Behavior and
-    Organization</i>.</em>
+    A model of <strong>chain compliance</strong>: U.S.&ndash;aligned miners refuse to build on
+    blocks that include sanctioned transactions, and try to rewrite them out of history.
+    <em>Hendrickson &amp; Warmke (2026), <i>JEBO</i>.</em>
   </div>
 </header>
 
@@ -271,9 +268,7 @@
         <span class="label-value" id="val-theta">0%</span>
       </label>
       <div class="label-desc">
-        Of compliant miners, what fraction actually overwrites the most recent block when it
-        contains a sanctioned transaction. Coalition <em>commitment</em>, not size — a determined
-        30% beats a hesitant 50%.
+        Fraction of compliant miners actually rewriting non-compliant blocks. Determined 30% beats hesitant 50%.
       </div>
       <input type="range" id="theta" min="0" max="1" step="0.01" value="0">
     </div>
@@ -284,8 +279,7 @@
         <span class="label-value" id="val-qF">$0</span>
       </label>
       <div class="label-desc">
-        What a non-compliant miner expects to pay: probability of being caught × the fine if
-        caught. A fixed cost — shrinks profits without changing marginal strategy.
+        Probability of being caught × the fine if caught. Acts as a fixed cost.
       </div>
       <input type="range" id="qF" min="0" max="200000" step="1000" value="0">
     </div>
@@ -299,7 +293,7 @@
         <span class="label-value" id="val-phi1">average</span>
       </label>
       <div class="label-desc">
-        Electricity cost for non-compliant miners. Left: flared-gas/hydro havens. Right: expensive grids.
+        Left: flared-gas/hydro havens. Right: expensive grids.
       </div>
       <input type="range" id="phi1" min="20000" max="200000" step="1000" value="80000">
     </div>
@@ -310,7 +304,7 @@
         <span class="label-value" id="val-phi2">average</span>
       </label>
       <div class="label-desc">
-        Same scale, for the U.S.&ndash;aligned side. Sanctions favor whichever side has cheaper energy.
+        Same scale. Sanctions favor whichever side has cheaper energy.
       </div>
       <input type="range" id="phi2" min="20000" max="200000" step="1000" value="80000">
     </div>
@@ -318,19 +312,19 @@
     <div class="results" id="results">
       <h3>Outcome</h3>
       <div class="row">
-        <span class="label">Non-compliant share of mining</span>
+        <span class="label">Non-compliant share</span>
         <span class="val" id="r-share">—</span>
       </div>
       <div class="row">
-        <span class="label">Compliant share of mining</span>
+        <span class="label">Compliant share</span>
         <span class="val" id="r-share2">—</span>
       </div>
       <div class="row">
-        <span class="label">Profit per block, non-compliant side</span>
+        <span class="label">Non-compliant profit/block</span>
         <span class="val" id="r-p1">—</span>
       </div>
       <div class="row">
-        <span class="label">Profit per block, compliant side</span>
+        <span class="label">Compliant profit/block</span>
         <span class="val" id="r-p2">—</span>
       </div>
       <div class="verdict" id="r-verdict">—</div>
@@ -342,9 +336,8 @@
     <div class="chart-card wide">
       <h3>The strategic equilibrium</h3>
       <p class="desc">
-        Each axis: one side's mining effort (level). The <strong>best-response curves</strong> cross
-        at the <strong>equilibrium dot</strong>. The <span style="color:#c0392b;font-weight:600">red zone</span>
-        is where non-compliant mining is profitable. <em>Censorship succeeds when the dot falls outside it.</em>
+        <strong>Best-response curves</strong> cross at the equilibrium. Censorship succeeds when that
+        dot falls outside the <span style="color:#c0392b;font-weight:600">red profitable zone</span>.
       </p>
       <canvas id="chart-main" height="420"></canvas>
     </div>
@@ -352,8 +345,7 @@
     <div class="chart-card">
       <h3>How aggressive does the censorship campaign need to be?</h3>
       <p class="desc">
-        Sweep of rewrite aggressiveness, passive → aggressive. The zero crossing is the threshold
-        where sanctions drive non-compliant miners out.
+        Zero crossing: threshold where sanctions break non-compliant profitability.
       </p>
       <canvas id="chart-theta" height="280"></canvas>
     </div>
@@ -361,8 +353,7 @@
     <div class="chart-card">
       <h3>How big do the fines need to be?</h3>
       <p class="desc">
-        Sweeps the fine from $0 to $200K. Zero crossing = minimum fine that breaks
-        non-compliant profitability at the current settings.
+        Zero crossing: minimum fine that breaks non-compliant profitability.
       </p>
       <canvas id="chart-qF" height="280"></canvas>
     </div>
@@ -371,35 +362,26 @@
 </div>
 
 <details>
-  <summary>What is "chain compliance" and why does it matter?</summary>
-  <p>Bitcoin is censorship-resistant: anyone with electricity and internet can process transactions.
-     <strong>Chain compliance</strong> — also called a <em>feather fork</em> — plugs that gap by
-     having U.S.&ndash;aligned miners refuse sanctioned transactions and rewrite the chain to erase
-     any block that includes them.</p>
-  <p>The threat works because if enough hashrate commits credibly, mining a non-compliant block
-     becomes a bet that worsens as the rewrite share rises. The model captures the trade-off:
-     compliant miners spend resources on rewrites; non-compliant miners weigh higher
-     sanctioned-user fees against the risk of orphaned blocks.</p>
+  <summary>What is "chain compliance"?</summary>
+  <p><strong>Chain compliance</strong> (a.k.a. <em>feather fork</em>): U.S.&ndash;aligned miners
+     refuse sanctioned transactions and rewrite the chain to erase blocks that include them.
+     With enough committed hashrate, mining a non-compliant block becomes a losing bet.</p>
 </details>
 
 <details>
   <summary>How to read the comparative statics</summary>
   <ul>
-    <li><b>Rewrites have two competing effects.</b> Higher rewrite share raises non-compliant
-        miners' costs (effort down) but also raises their stakes per surviving block (effort up).
-        Push the slider upward and watch non-compliant activity rise before the profitable
-        region collapses around it.</li>
-    <li><b>Fines are fixed costs.</b> They shrink profits without changing marginal strategy.
-        The fine sweep is a straight line; the rewrite sweep is the interesting one.</li>
-    <li><b>Energy decides the contest.</b> Sanctions work when compliant miners have cheaper
-        energy. If non-compliant mining migrates to flared-gas or hydro jurisdictions, the
-        strategy fails.</li>
+    <li><b>Rewrites cut both ways.</b> Higher costs push non-compliant effort down; higher stakes
+        per surviving block push it up. Slide θ up — activity rises before the profitable region
+        collapses.</li>
+    <li><b>Fines are fixed costs.</b> They shrink profits without shifting marginal strategy.</li>
+    <li><b>Energy decides.</b> Sanctions work when compliant miners have cheaper energy. Migration
+        to flared-gas or hydro flips the result.</li>
   </ul>
   <p style="margin-top:12px;padding-top:10px;border-top:1px solid #eee;font-size:12px;color:#666;">
-    <b>Caveat the model omits:</b> sanctioned users can offer higher transaction fees to keep
-    getting included. The paper (p.&nbsp;14) notes that successful crackdowns raise non-compliant
-    fee revenue, offsetting fines and potentially funding hashrate expansion. The "works"
-    verdict here is short-run and fee-static.
+    <b>Caveat:</b> sanctioned users can offer higher fees to stay included, raising non-compliant
+    fee revenue and potentially funding hashrate expansion (paper p.&nbsp;14). The "works" verdict
+    is short-run, fee-static.
   </p>
 </details>
 
@@ -708,11 +690,11 @@ function render() {
   const verdict = document.getElementById('r-verdict');
   const resultsBox = document.getElementById('results');
   if (censorshipWorks) {
-    verdict.innerHTML = '✓ <strong>Censorship works.</strong> Non-compliant miners lose money on average and would exit the market.';
+    verdict.innerHTML = '✓ <strong>Censorship works.</strong> Non-compliant miners lose money and exit.';
     verdict.className = 'verdict success-text';
     resultsBox.classList.add('success');
   } else {
-    verdict.innerHTML = '✗ <strong>Censorship fails.</strong> Non-compliant miners stay profitable and continue processing sanctioned transactions.';
+    verdict.innerHTML = '✗ <strong>Censorship fails.</strong> Non-compliant miners stay profitable.';
     verdict.className = 'verdict fail-text';
     resultsBox.classList.remove('success');
   }
