@@ -493,10 +493,11 @@ function drawAxes(ctx, w, h, pad, xlim, ylim, xlabel, ylabel, opts) {
   ctx.font = tickFont + 'px -apple-system, sans-serif';
   const yTickMaxW = ctx.measureText(opts.yfmt ? opts.yfmt(ylim[1]) : formatTick(ylim[1])).width;
   ctx.font = '600 ' + labelFont + 'px -apple-system, sans-serif';
-  const ylabelX = Math.max(18, plot.x - yTickMaxW - 18);
+  const ylabelX = Math.max(18, plot.x - yTickMaxW - 32);
   ctx.translate(ylabelX, plot.y + plot.h/2);
   ctx.rotate(-Math.PI/2);
   ctx.textBaseline = 'top';
+  ctx.textAlign = 'center';
   ctx.fillText(ylabel, 0, 0);
   ctx.restore();
 
@@ -681,8 +682,8 @@ function drawMainChart(eq, censorshipWorks) {
   const pad = { l: 100, r: 24, t: 22, b: 56 };
   const HMAX = 5;
   const ax = drawAxes(ctx, w, h, pad, [0, HMAX], [0, HMAX],
-    'Mining effort by non-compliant miners →',
-    'Mining effort by compliant miners →',
+    'Non-compliant effort →',
+    'Compliant effort →',
     { fontScale: FS, squarePlot: true });
 
   const { theta, qF, a, phi1, phi2, psi } = STATE;
